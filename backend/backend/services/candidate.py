@@ -7,6 +7,7 @@ import csv
 import io
 import requests
 from datetime import datetime
+from pathlib import Path
 
 from backend.models.user import User, Candidate, Trainer
 from backend.models.course import Course, Subject
@@ -56,6 +57,24 @@ def get_exam_questions(
     try:
         # Get the full file path
         file_path = get_file_path(exam.csv_url)
+        print(f"DEBUG: Attempting to open file at: {file_path}")
+        print(f"DEBUG: File exists? {file_path.exists()}")
+        
+        # Backup approach if file doesn't exist at the exact path
+        if not file_path.exists():
+            # Try direct path in uploads/exams
+            alternate_path = Path(f"uploads/exams/{exam_id}/{exam.csv_url.split('/')[-1]}")
+            print(f"DEBUG: Attempting alternate path: {alternate_path}")
+            print(f"DEBUG: Alternate exists? {alternate_path.exists()}")
+            
+            if alternate_path.exists():
+                file_path = alternate_path
+        
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Exam CSV file not found at {file_path}"
+            )
         
         # Read and parse CSV
         with open(file_path, 'r') as f:
@@ -76,13 +95,15 @@ def get_exam_questions(
             
             # Calculate pagination
             total = len(all_questions)
-            total_pages = (total + page_size - 1) // page_size
-            page = min(page, total_pages)  # Ensure page is within bounds
+            total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+            page = min(page, total_pages) if total_pages > 0 else 0
             
             # Get paginated questions
-            start_idx = (page - 1) * page_size
+            start_idx = (page - 1) * page_size if page > 0 else 0
             end_idx = start_idx + page_size
             paginated_questions = all_questions[start_idx:end_idx]
+            
+            print(f"DEBUG: Found {total} questions in CSV")
             
             return {
                 'questions': paginated_questions,
@@ -92,6 +113,9 @@ def get_exam_questions(
                 'total_pages': total_pages
             }
     except Exception as e:
+        import traceback
+        print(f"DEBUG: Error reading exam questions: {str(e)}")
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error reading exam questions: {str(e)}"
@@ -106,6 +130,24 @@ def get_exam_questions_with_answers(db: Session, exam_id: UUID) -> List[ExamQues
     try:
         # Get the full file path
         file_path = get_file_path(exam.csv_url)
+        print(f"DEBUG: Attempting to open file at: {file_path}")
+        print(f"DEBUG: File exists? {file_path.exists()}")
+        
+        # Backup approach if file doesn't exist at the exact path
+        if not file_path.exists():
+            # Try direct path in uploads/exams
+            alternate_path = Path(f"uploads/exams/{exam_id}/{exam.csv_url.split('/')[-1]}")
+            print(f"DEBUG: Attempting alternate path: {alternate_path}")
+            print(f"DEBUG: Alternate exists? {alternate_path.exists()}")
+            
+            if alternate_path.exists():
+                file_path = alternate_path
+        
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Exam CSV file not found at {file_path}"
+            )
         
         # Read and parse CSV
         with open(file_path, 'r') as f:
@@ -124,8 +166,13 @@ def get_exam_questions_with_answers(db: Session, exam_id: UUID) -> List[ExamQues
                     option_d=row['option_d'],
                     correct_answer=row['correct_answer'].lower()  # Ensure lowercase
                 ))
+            
+            print(f"DEBUG: Found {len(questions)} questions in CSV for submission")
             return questions
     except Exception as e:
+        import traceback
+        print(f"DEBUG: Error reading exam questions with answers: {str(e)}")
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error reading exam questions: {str(e)}"

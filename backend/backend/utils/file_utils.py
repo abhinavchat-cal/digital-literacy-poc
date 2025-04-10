@@ -17,7 +17,10 @@ def get_file_path(relative_path: str) -> Path:
     Returns:
         Path: Full path to the file
     """
-    return settings.UPLOAD_BASE_DIR / relative_path
+    full_path = settings.UPLOAD_BASE_DIR / relative_path
+    print(f"DEBUG get_file_path: relative_path={relative_path}, UPLOAD_BASE_DIR={settings.UPLOAD_BASE_DIR}, full_path={full_path}")
+    print(f"DEBUG get_file_path: Does file exist? {full_path.exists()}")
+    return full_path
 
 def save_uploaded_file(
     file: UploadFile,

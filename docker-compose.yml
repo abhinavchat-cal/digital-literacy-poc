@@ -43,6 +43,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=digital_literacy
+      - CORS_ORIGINS=http://localhost,http://localhost:80,http://localhost:5173,http://127.0.0.1:5173,http://frontend:80
     networks:
       app-network:
         aliases:

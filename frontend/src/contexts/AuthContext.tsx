@@ -118,10 +118,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setError(null);
       setLoading(true);
-      await axios.post(`${API_URL}/register`, data);
+      
+      // Remove the institute_id completely for admin users
+      // For non-admin users, ensure we don't send an empty string for institute_id
+      const cleanedData = { ...data };
+      
+      if (cleanedData.role === 'admin') {
+        delete cleanedData.institute_id;
+      } else if (!cleanedData.institute_id || cleanedData.institute_id.trim() === '') {
+        // For non-admin users, if institute_id is empty/null/undefined, we need to remove it completely
+        delete cleanedData.institute_id;
+      }
+      
+      console.log('Sanitized registration data:', cleanedData);
+      
+      // Make API call with sanitized data
+      await axios.post(`${API_URL}/register`, cleanedData);
       navigate('/login');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      if (axios.isAxiosError(err)) {
+        const errorData = err.response?.data;
+        console.error('Registration API error:', errorData);
+        setError(errorData?.detail || 'Registration failed. Please try again.');
+      } else {
+        console.error('Registration error:', err);
+        setError(err instanceof Error ? err.message : 'Registration failed');
+      }
       throw err;
     } finally {
       setLoading(false);

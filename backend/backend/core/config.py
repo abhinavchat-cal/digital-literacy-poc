@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # CORS
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    BACKEND_CORS_ORIGINS: List[str] = []
+    CORS_ORIGINS: Optional[str] = None
     
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
@@ -39,23 +40,6 @@ class Settings(BaseSettings):
     TRAINER_FILES_DIR: Path = UPLOAD_BASE_DIR / "trainers"
     INSTITUTE_FILES_DIR: Path = UPLOAD_BASE_DIR / "institutes"
     
-    # Ensure directories exist
-    # def __init__(self, **kwargs):
-    #     super().__init__(**kwargs)
-        
-    #     # Construct database URL if not provided
-    #     if not self.SQLALCHEMY_DATABASE_URL:
-    #         self.SQLALCHEMY_DATABASE_URL = (
-    #             f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
-    #             f"{self.POSTGRES_SERVER}/{self.POSTGRES_DB}"
-    #         )
-        
-    #     # Create base directories if they don't exist
-    #     self.UPLOAD_BASE_DIR.mkdir(parents=True, exist_ok=True)
-    #     self.EXAM_FILES_DIR.mkdir(parents=True, exist_ok=True)
-    #     self.TRAINER_FILES_DIR.mkdir(parents=True, exist_ok=True)
-    #     self.INSTITUTE_FILES_DIR.mkdir(parents=True, exist_ok=True)
-
     @model_validator(mode="after")
     def set_dynamic_fields_and_dirs(self):
         # Construct DB URL if not provided
@@ -64,6 +48,10 @@ class Settings(BaseSettings):
                 f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
                 f"{self.POSTGRES_SERVER}/{self.POSTGRES_DB}"
             )
+
+        # Update CORS_ORIGINS if provided
+        if self.CORS_ORIGINS:
+            self.BACKEND_CORS_ORIGINS = [i.strip() for i in self.CORS_ORIGINS.split(",")]
 
         # Create upload directories
         for path in [

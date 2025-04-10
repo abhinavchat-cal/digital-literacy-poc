@@ -72,8 +72,40 @@ export const logout = () => {
 
 export const authService = {
   async register(data: RegisterData): Promise<TokenResponse> {
-    const response = await axios.post(`${API_URL}/register`, data);
-    return response.data;
+    console.log('Original registration data:', data);
+    
+    // Create a clean copy without the institute_id initially
+    const cleanData: Omit<RegisterData, 'institute_id'> & { institute_id?: string } = {
+      email: data.email,
+      password: data.password,
+      full_name: data.full_name,
+      aadhaar_id: data.aadhaar_id,
+      role: data.role,
+    };
+    
+    // Only add institute_id if it's a valid non-empty string and role is not admin
+    if (
+      data.role !== 'admin' && 
+      data.institute_id && 
+      typeof data.institute_id === 'string' && 
+      data.institute_id.trim() !== ''
+    ) {
+      cleanData.institute_id = data.institute_id;
+    }
+    
+    console.log('Final registration data being sent:', cleanData);
+    
+    try {
+      const response = await axios.post(`${API_URL}/register`, cleanData);
+      return response.data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Response data:', error.response?.data);
+        console.error('Request payload:', error.config?.data);
+      }
+      throw error;
+    }
   },
 
   getCurrentUser(): TokenResponse['user'] | null {

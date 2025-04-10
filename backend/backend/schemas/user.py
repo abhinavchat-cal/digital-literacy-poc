@@ -15,8 +15,14 @@ class UserCreate(UserBase):
 
     @validator('institute_id')
     def validate_institute_id(cls, v, values):
+        # For candidates and trainers, institute_id is required
         if 'role' in values and values['role'] in ['candidate', 'trainer'] and not v:
             raise ValueError('institute_id is required for candidates and trainers')
+        
+        # For admin role, institute_id should be None
+        if 'role' in values and values['role'] == 'admin':
+            return None
+            
         return v
 
 class UserUpdate(BaseModel):

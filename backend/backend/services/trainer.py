@@ -76,14 +76,49 @@ async def upload_exam_csv(db: Session, exam_id: UUID, file: UploadFile, trainer_
         
         # Save the file
         file_path = save_exam_file(file, exam_id, trainer_id)
+        print(f"DEBUG: CSV saved to {file_path}")
+        
+        # Save content directly to ensure it's properly written
+        import os
+        from pathlib import Path
+        from backend.core.config import settings
+        
+        # Ensure the direct file path is also created
+        direct_file_path = settings.UPLOAD_BASE_DIR / file_path
+        os.makedirs(os.path.dirname(direct_file_path), exist_ok=True)
+        
+        # Reset file for reading
+        file.file.seek(0)
+        content = await file.read()
+        
+        # Write file directly
+        with open(direct_file_path, 'wb') as f:
+            f.write(content)
+        
+        print(f"DEBUG: Directly wrote file to {direct_file_path}")
+        print(f"DEBUG: File exists? {os.path.exists(direct_file_path)}")
         
         # Update exam with file path
         exam.csv_url = file_path
         db.commit()
         
+        # Validate file can be read
+        try:
+            from backend.utils.file_utils import get_file_path
+            read_path = get_file_path(file_path)
+            with open(read_path, 'r') as f:
+                reader = csv.DictReader(f)
+                question_count = sum(1 for _ in reader)
+                print(f"DEBUG: Successfully read {question_count} questions from saved CSV")
+        except Exception as e:
+            print(f"DEBUG: Warning - Could not read saved CSV: {str(e)}")
+        
         return {"message": "CSV uploaded successfully", "exam_id": str(exam_id), "file_path": file_path}
     
     except Exception as e:
+        import traceback
+        print(f"DEBUG: Error uploading CSV: {str(e)}")
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Error processing CSV: {str(e)}"

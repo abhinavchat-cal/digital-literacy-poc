@@ -20,7 +20,30 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await register(formData);
+    
+    // Create a clean data object for submission
+    const dataToSubmit: {
+      email: string;
+      password: string;
+      full_name: string;
+      aadhaar_id: string;
+      role: 'admin' | 'trainer' | 'candidate';
+      institute_id?: string;
+    } = {
+      email: formData.email,
+      password: formData.password,
+      full_name: formData.full_name,
+      aadhaar_id: formData.aadhaar_id,
+      role: formData.role,
+    };
+    
+    // Only include institute_id if not admin AND the value is not empty
+    if (formData.role !== 'admin' && formData.institute_id && formData.institute_id.trim() !== '') {
+      dataToSubmit.institute_id = formData.institute_id;
+    }
+    
+    console.log('Submitting registration data:', dataToSubmit);
+    await register(dataToSubmit);
   };
 
   return (
@@ -127,10 +150,9 @@ const Register: React.FC = () => {
                   id="institute_id"
                   name="institute_id"
                   type="text"
-                  required
                   className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 bg-white text-black placeholder-gray-500 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                   placeholder="Institute ID"
-                  value={formData.institute_id}
+                  value={formData.institute_id || ''}
                   onChange={handleChange}
                 />
               </div>
