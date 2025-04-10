@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import { publicService, Institute } from '../../services/public';
 
 const Register: React.FC = () => {
   const { register, error } = useAuth();
+  const [institutes, setInstitutes] = useState<Institute[]>([]);
+  const [isLoadingInstitutes, setIsLoadingInstitutes] = useState(false);
+  const [instituteError, setInstituteError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -12,6 +16,40 @@ const Register: React.FC = () => {
     role: 'candidate' as 'admin' | 'trainer' | 'candidate',
     institute_id: '',
   });
+
+  // Fetch institutes when component mounts
+  useEffect(() => {
+    const fetchInstitutes = async () => {
+      try {
+        setIsLoadingInstitutes(true);
+        const data = await publicService.getInstitutes();
+        setInstitutes(data);
+        
+        // Set first institute as default if available and role is not admin
+        if (data.length > 0 && formData.role !== 'admin') {
+          setFormData(prev => ({ ...prev, institute_id: data[0].id }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch institutes:', err);
+        setInstituteError('Failed to load institutes. Please try again later.');
+      } finally {
+        setIsLoadingInstitutes(false);
+      }
+    };
+
+    fetchInstitutes();
+  }, []);
+
+  // Update institute_id when role changes
+  useEffect(() => {
+    if (formData.role === 'admin') {
+      // Clear institute_id for admin
+      setFormData(prev => ({ ...prev, institute_id: '' }));
+    } else if (institutes.length > 0 && !formData.institute_id) {
+      // Set default institute if available
+      setFormData(prev => ({ ...prev, institute_id: institutes[0].id }));
+    }
+  }, [formData.role, institutes]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -144,17 +182,36 @@ const Register: React.FC = () => {
             {(formData.role === 'trainer' || formData.role === 'candidate') && (
               <div>
                 <label htmlFor="institute_id" className="sr-only">
-                  Institute ID
+                  Institute
                 </label>
-                <input
-                  id="institute_id"
-                  name="institute_id"
-                  type="text"
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 bg-white text-black placeholder-gray-500 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Institute ID"
-                  value={formData.institute_id || ''}
-                  onChange={handleChange}
-                />
+                {isLoadingInstitutes ? (
+                  <div className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 bg-white text-black placeholder-gray-500 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm">
+                    Loading institutes...
+                  </div>
+                ) : instituteError ? (
+                  <div className="appearance-none rounded-none relative block w-full px-3 py-2 border border-red-300 bg-white text-red-500 placeholder-gray-500 rounded-b-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm">
+                    {instituteError}
+                  </div>
+                ) : institutes.length === 0 ? (
+                  <div className="appearance-none rounded-none relative block w-full px-3 py-2 border border-yellow-300 bg-white text-yellow-700 placeholder-gray-500 rounded-b-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm">
+                    No institutes available. Please contact an administrator.
+                  </div>
+                ) : (
+                  <select
+                    id="institute_id"
+                    name="institute_id"
+                    required
+                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 bg-white text-black placeholder-gray-500 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    value={formData.institute_id}
+                    onChange={handleChange}
+                  >
+                    {institutes.map(institute => (
+                      <option key={institute.id} value={institute.id}>
+                        {institute.name} ({institute.district})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             )}
           </div>
@@ -166,7 +223,8 @@ const Register: React.FC = () => {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={isLoadingInstitutes || (formData.role !== 'admin' && institutes.length === 0)}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Register
             </button>
