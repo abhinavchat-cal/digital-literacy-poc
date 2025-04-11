@@ -7,9 +7,9 @@ import csv
 import io
 
 from backend.models.user import User, Trainer, Candidate
-from backend.models.course import Subject
+from backend.models.course import Subject, Course
 from backend.models.exam import Exam, ExamAttempt
-from backend.schemas.course import SubjectCreate
+from backend.schemas.course import SubjectCreate, CourseInDB
 from backend.schemas.exam import ExamCreate
 from backend.utils.file_utils import save_exam_file
 
@@ -46,6 +46,12 @@ def create_exam(db: Session, exam: ExamCreate, trainer_id: UUID) -> Exam:
     db.commit()
     db.refresh(db_exam)
     return db_exam
+
+def get_trainer_exams(db: Session, trainer_id: UUID) -> List[Exam]:
+    """Get all exams created by the trainer"""
+    return db.query(Exam).join(Subject).filter(
+        Subject.trainer_id == trainer_id
+    ).all()
 
 async def upload_exam_csv(db: Session, exam_id: UUID, file: UploadFile, trainer_id: UUID) -> dict:
     # Verify exam belongs to trainer
@@ -171,4 +177,16 @@ def get_exam_results(db: Session, exam_id: UUID, trainer_id: UUID) -> dict:
             }
             for attempt in attempts
         ]
-    } 
+    }
+
+def get_trainer_courses(db: Session, trainer_id: UUID) -> List[CourseInDB]:
+    # Get trainer's institute
+    trainer = db.query(Trainer).filter(Trainer.user_id == trainer_id).first()
+    if not trainer:
+        raise HTTPException(status_code=404, detail="Trainer not found")
+    
+    # Get all courses (courses are global, not institute-specific in the current schema)
+    courses = db.query(Course).all()
+    
+    # Return the courses in pydantic format
+    return [CourseInDB.from_orm(course) for course in courses] 

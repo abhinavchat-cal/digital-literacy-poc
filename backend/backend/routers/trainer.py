@@ -8,7 +8,7 @@ from backend.core.dependencies import require_trainer
 from backend.models.user import User, Trainer
 from backend.models.course import Subject
 from backend.models.exam import Exam
-from backend.schemas.course import SubjectCreate, SubjectInDB
+from backend.schemas.course import SubjectCreate, SubjectInDB, CourseInDB
 from backend.schemas.exam import ExamCreate, ExamInDB
 from backend.schemas.user import UserResponse
 from backend.services import trainer as trainer_service
@@ -41,6 +41,14 @@ async def create_exam(
     """Create a new exam for a subject"""
     return trainer_service.create_exam(db, exam, current_user.id)
 
+@router.get("/trainer/exams", response_model=List[ExamInDB])
+async def list_exams(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_trainer)
+):
+    """List all exams created by the trainer"""
+    return trainer_service.get_trainer_exams(db, current_user.id)
+
 @router.post("/trainer/exams/{exam_id}/upload-csv")
 async def upload_exam_csv(
     exam_id: UUID,
@@ -67,3 +75,11 @@ async def get_exam_results(
 ):
     """Get exam results and statistics"""
     return trainer_service.get_exam_results(db, exam_id, current_user.id)
+
+@router.get("/trainer/courses", response_model=List[CourseInDB])
+async def list_courses(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_trainer)
+):
+    """List all courses available for the trainer's institute"""
+    return trainer_service.get_trainer_courses(db, current_user.id)

@@ -36,6 +36,15 @@ export interface ExamResult {
   attempted_on: string;
 }
 
+export interface Course {
+  id: string;
+  title: string;
+  description: string;
+  pdf_url?: string;
+  created_at: string;
+  created_by: string;
+}
+
 export const trainerService = {
   // Subject Management
   async getSubjects(): Promise<Subject[]> {
@@ -79,5 +88,20 @@ export const trainerService = {
   async getExamResults(examId: string): Promise<ExamResult[]> {
     const response = await axios.get(`${API_URL.replace('/auth', '/trainer')}/trainer/exams/${examId}/results`);
     return response.data;
-  }
+  },
+
+  // Course Management
+  async getAvailableCourses(): Promise<Course[]> {
+    const response = await axios.get(`${API_URL.replace('/auth', '/trainer')}/trainer/courses`);
+    return response.data;
+  },
+
+  async getCoursesByInstitute(instituteId?: string): Promise<Course[]> {
+    const url = instituteId 
+      ? `${API_URL.replace('/auth', '/trainer')}/trainer/courses?institute_id=${instituteId}`
+      : `${API_URL.replace('/auth', '/trainer')}/trainer/courses`;
+    
+    const response = await axios.get(url);
+    return response.data;
+  },
 }; 
