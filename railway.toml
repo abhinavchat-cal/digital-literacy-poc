@@ -1,10 +1,20 @@
 [build]
-builder = "nixpacks"
-buildCommand = "pip install poetry && poetry install"
+builder = "DOCKERFILE"
+dockerfilePath = "./backend/Dockerfile"
 
 [deploy]
-startCommand = "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
 healthcheckPath = "/docs"
 healthcheckTimeout = 100
-restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 10 
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[services]
+[services.app]
+name = "digital-literacy-backend"
+port = 8000
+command = "poetry run uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+
+[services.db]
+name = "digital-literacy-db"
+type = "postgresql"
+plan = "hobby" 
