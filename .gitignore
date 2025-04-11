@@ -32,7 +32,6 @@ venv.bak/
 
 # Poetry
 .python-version
-poetry.lock
 
 # Unit test / coverage reports
 htmlcov/
