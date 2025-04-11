@@ -1,50 +1,220 @@
-[![GitHub Super-Linter](https://github.com/Calance-US/public-repository-template/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
+# Digital Literacy Platform
 
-## :black_nib: Project Title
-*Write about the project in a small paragraph*
+A full-stack POC application for managing a government-led Digital Literacy Campaign in Himachal Pradesh, with separate login flows and dashboards for Candidate, Trainer, and Admin roles.
 
-## :loop: Workflow
-*Write a brief workflow of the tool along with a graphical flow chart representation*
+## Tech Stack
 
-## :page_facing_up: Documentation
-*Specify the link to the project documentation or if using something like a Swagger, Mkdocs, specify instructions to use them*
+- **Backend**: FastAPI (Python 3.11), PostgreSQL, SQLAlchemy, Alembic, Poetry
+- **Frontend**: React (TypeScript), Vite, TailwindCSS
+- **Infrastructure**: Docker, Kubernetes
+- **Authentication**: JWT
 
-## :baby: Requirements and Depedencies
-*Project requirements and dependencies need to be highlighted here along with versions*
+## Local Development
 
-## :hourglass_flowing_sand: Installation
-*Write installation instructions for the project*
+### Prerequisites
 
-## :cyclone: Environment variables
-*Define all the environment variables that your project needs*
+- Python 3.11+
+- Node.js 20+
+- PostgreSQL 14+
+- Docker and Docker Compose (optional)
+- Poetry (for backend dependency management)
 
-## :tada: Running the project
-*Write the commands and run instructions for the project under the following headers*
+### Without Docker
 
-### Local
-*Commands to run the command in local along with some brief instructions*
+1. **Backend Setup**
+   ```bash
+   # Install Poetry if not already installed
+   curl -sSL https://install.python-poetry.org | python3 -
 
-### Docker
-*Commands to build image and run in local along with some brief instructions. Specify the path to Dockerfile and context relative to the root of the project*
+   # Navigate to backend directory
+   cd backend
 
-## :computer: Debugging the code
+   # Install dependencies using Poetry
+   poetry install
 
-### Debug tool used
-*Specify which debugging tool is used along with link or instructions on how to use it*
+   # Activate the virtual environment
+   poetry shell
 
-### Debug instructions
-*Specify the debugging instructions and how to install all the dependencies*
+   # Set up environment variables
+   export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/digital_literacy
+   export SECRET_KEY=your-secret-key-here
+   export ALGORITHM=HS256
+   export ACCESS_TOKEN_EXPIRE_MINUTES=30
 
-## :flashlight: Testing
-*Specify the testing scenario of the project along with the command to run the tests*
+   # Run database migrations
+   poetry run alembic upgrade head
 
-## :information_desk_person: Contributors
-Want to reach out to the folks who have tirelessly worked on this project, please reach out to the following folks.
+   # Start the backend server
+   poetry run uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+   ```
 
-**Project Manager/s:**
-- [Manager-Name1](GitHub profile URL of Manager1)
-- [Manager-Name2](GitHub profile URL of Manager2)
+2. **Frontend Setup**
+   ```bash
+   cd frontend
+   npm install
 
-**Developer/s:**
-- [Developer-1](GitHub profile URL of developer-1)
-- [Developer-2](GitHub profile URL of developer-2)
+   # Set up environment variables
+   export VITE_API_URL=http://localhost:8000/api/v1
+
+   # Start the development server
+   npm run dev
+   ```
+
+### With Docker
+
+1. **Build and Run**
+   ```bash
+   # Start all services
+   docker compose up --build
+
+   # Access the application
+   Frontend: http://localhost:80
+   Backend API: http://localhost:8000
+   API Documentation: http://localhost:8000/docs
+   ```
+
+2. **Environment Variables**
+   The following environment variables are used in the Docker setup:
+
+   ```bash
+   # Backend
+   DATABASE_URL=postgresql://postgres:postgres@db:5432/digital_literacy
+   SECRET_KEY=your-secret-key-here
+   ALGORITHM=HS256
+   ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+   # Frontend
+   VITE_API_URL=http://localhost:8000/api/v1
+   ```
+
+## Kubernetes Deployment (KubeSphere)
+
+### Prerequisites
+
+- KubeSphere cluster access
+- kubectl configured
+- Helm 3+
+
+### Deployment Steps
+
+1. **Create Namespace**
+   ```bash
+   kubectl create namespace digital-literacy
+   ```
+
+2. **Create Secrets**
+   ```bash
+   # Create a secret for database credentials
+   kubectl create secret generic db-secrets \
+     --namespace digital-literacy \
+     --from-literal=POSTGRES_USER=postgres \
+     --from-literal=POSTGRES_PASSWORD=postgres \
+     --from-literal=POSTGRES_DB=digital_literacy
+
+   # Create a secret for backend configuration
+   kubectl create secret generic backend-secrets \
+     --namespace digital-literacy \
+     --from-literal=SECRET_KEY=your-secret-key-here \
+     --from-literal=ALGORITHM=HS256 \
+     --from-literal=ACCESS_TOKEN_EXPIRE_MINUTES=30
+   ```
+
+3. **Deploy PostgreSQL**
+   ```bash
+   # Create persistent volume claim
+   kubectl apply -f k8s/postgres-pvc.yaml
+
+   # Deploy PostgreSQL
+   kubectl apply -f k8s/postgres-deployment.yaml
+   kubectl apply -f k8s/postgres-service.yaml
+   ```
+
+4. **Deploy Backend**
+   ```bash
+   # Build and push Docker image
+   docker build -t your-registry/digital-literacy-backend:latest ./backend
+   docker push your-registry/digital-literacy-backend:latest
+
+   # Deploy backend
+   kubectl apply -f k8s/backend-deployment.yaml
+   kubectl apply -f k8s/backend-service.yaml
+   ```
+
+5. **Deploy Frontend**
+   ```bash
+   # Build and push Docker image
+   docker build -t your-registry/digital-literacy-frontend:latest ./frontend
+   docker push your-registry/digital-literacy-frontend:latest
+
+   # Deploy frontend
+   kubectl apply -f k8s/frontend-deployment.yaml
+   kubectl apply -f k8s/frontend-service.yaml
+   ```
+
+6. **Configure Ingress**
+   ```bash
+   # Deploy ingress
+   kubectl apply -f k8s/ingress.yaml
+   ```
+
+### KubeSphere Specific Configuration
+
+1. **Create Project**
+   - Log in to KubeSphere console
+   - Create a new project named "digital-literacy"
+   - Set appropriate resource quotas
+
+2. **Deploy Applications**
+   - Use KubeSphere's application deployment wizard
+   - Import the Kubernetes manifests from the `k8s` directory
+   - Configure the following:
+     - Container registry credentials
+     - Resource limits and requests
+     - Health checks
+     - Auto-scaling policies
+
+3. **Configure Routes**
+   - Set up ingress rules in KubeSphere
+   - Configure SSL certificates
+   - Set up custom domains
+
+4. **Monitoring and Logging**
+   - Enable KubeSphere's monitoring features
+   - Configure log collection
+   - Set up alerts
+
+## Project Structure
+
+```
+.
+├── backend/
+│   ├── app/
+│   │   ├── core/         # Core functionality
+│   │   ├── models/       # Database models
+│   │   ├── routers/      # API routes
+│   │   ├── schemas/      # Pydantic models
+│   │   └── services/     # Business logic
+│   ├── alembic/          # Database migrations
+│   └── Dockerfile
+├── frontend/
+│   ├── src/
+│   │   ├── components/   # React components
+│   │   ├── pages/        # Page components
+│   │   ├── services/     # API services
+│   │   └── contexts/     # React contexts
+│   └── Dockerfile
+├── k8s/                  # Kubernetes manifests
+└── docker-compose.yml
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details. 
