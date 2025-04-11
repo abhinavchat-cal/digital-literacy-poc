@@ -62,7 +62,15 @@ A full-stack POC application for managing a government-led Digital Literacy Camp
 
 ### With Docker
 
-1. **Build and Run**
+1. **Environment Setup**
+   ```bash
+   # Set the backend API base URL (required before running docker compose)
+   export BACKEND_API_BASE=http://localhost:8000  # For local development
+   # or
+   export BACKEND_API_BASE=http://your-production-url:8000  # For production
+   ```
+
+2. **Build and Run**
    ```bash
    # Start all services
    docker compose up --build
@@ -73,7 +81,7 @@ A full-stack POC application for managing a government-led Digital Literacy Camp
    API Documentation: http://localhost:8000/docs
    ```
 
-2. **Environment Variables**
+3. **Environment Variables**
    The following environment variables are used in the Docker setup:
 
    ```bash
@@ -84,7 +92,8 @@ A full-stack POC application for managing a government-led Digital Literacy Camp
    ACCESS_TOKEN_EXPIRE_MINUTES=30
 
    # Frontend
-   VITE_API_URL=http://localhost:8000/api/v1
+   BACKEND_API_BASE=http://localhost:8000  # Base URL for the backend API
+   # Note: The full API URL will be ${BACKEND_API_BASE}/api/v1/auth
    ```
 
 ## Kubernetes Deployment (KubeSphere)
