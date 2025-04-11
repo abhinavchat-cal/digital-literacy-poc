@@ -91,3 +91,5 @@ frontend/.cache/
 # (Don't ignore migrations themselves - they should be versioned)
 # But ignore any temporary files
 alembic/versions/__pycache__/
+
+*/.trunk
